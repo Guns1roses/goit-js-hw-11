@@ -17,13 +17,16 @@ img {
 header {
   display: flex;
   flex-wrap: wrap;
+
   align-items: center;
+  text-align: center;
   position: fixed;
+
   z-index: 99;
   top: 0;
   width: 100%;
-  text-align: center;
-  background-color: blueviolet;
+
+  background-color: rgb(41, 17, 63);
   box-shadow: 0px 10px 8px -5px rgba(112, 125, 127, 0.8);
 }
 
