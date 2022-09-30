@@ -1,5 +1,5 @@
-export default {
-  galleryContainer: document.querySelector('.gallery'),
-  form: document.querySelector('#search-form'),
-  scrollDiv: document.querySelector('.scroll-div'),
+export const refs = {
+  form: document.querySelector('.search-form'),
+  gallery: document.querySelector('.gallery'),
+  body: document.querySelector('body'),
 };

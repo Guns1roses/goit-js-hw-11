@@ -1,63 +1,64 @@
-import pictureItemTemp from './templates/picture-card.hbs';
-import imageApiService from './js/api';
+import cardMarkup from './templates/picture-card.hbs';
+import { fetchImg, fetchImgOptions }  from './js/api';
 import { Notify } from 'notiflix/build/notiflix-notify-aio';
 import SimpleLightbox from 'simplelightbox';
 import 'simplelightbox/dist/simple-lightbox.min.css';
-import refs from './js/refs';
+import { refs } from './js/refs';
 
 
-let imageApi = new imageApiService();
-let lightbox = new SimpleLightbox('.gallery a');
+const ligthbox = new SimpleLightbox('.gallery a', { captionDelay: 100 });
 
-function createCardMarkup(images) {
-  const imageMarkup = images.hits.reduce((acc, image) => {
-    return (acc += pictureItemTemp(image));
-  }, '');
-
-  refs.galleryContainer.insertAdjacentHTML('beforeend', imageMarkup);
-  lightbox.refresh();
-}
-
-async function onSearchFormSubmit(evt) {
-  evt.preventDefault();
-  refs.scrollDiv.classList.add('hidden');
-  imageApi.query = evt.currentTarget.elements.searchQuery.value;
-  imageApi.resetPage();
-  clearGallery();
-
-  try {
-    const result = await imageApi.fetchImages();
-    if (result.hits.length === 0 || imageApi.query === '') {
-      throw new Error('Sorry, there are no images matching your search query. Please try again.');
-    }
-    showTotalHits(result.totalHits);
-    createCardMarkup(result);
-  } catch (Error) {
-    Notify.failure(Error.message);
-  }
-  refs.scrollDiv.classList.remove('hidden');
-}
-
-function clearGallery() {
-  refs.galleryContainer.innerHTML = '';
-}
-
-function showTotalHits(totalHits) {
-  return Notify.info(`Hooray! We found ${totalHits} images.`);
-}
-
-const options = {
-  rootMargin: '200px',
+const initialData = {
+  totalHits: 0,
+  hits: [],
 };
 
-function onEntry(entries) {
-  entries.forEach(entry => {
-    if (entry.isIntersecting && imageApi.searchString !== '') {
-      imageApi.fetchImages().then(createCardMarkup);
+const markup = hits => {
+  refs.gallery.insertAdjacentHTML('beforeend', cardMarkup(hits));
+  ligthbox.refresh();
+};
+
+const observer = new IntersectionObserver((entries, observer) => {
+  const { hits, totalHits } = initialData;
+  const lastCard = entries[0];
+  if (!lastCard.isIntersecting || hits.length === totalHits) return;
+  observer.unobserve(lastCard.target);
+  fetchImgOptions.page++;
+  createGallery();
+});
+
+const createGallery = async () => {
+  await fetchImg(fetchImgOptions).then(({ data }) => {
+    const { total, hits } = data;
+    if (total || hits.length) {
+      if (fetchImgOptions.page === 1) {
+        Notify.success(`Hooray! We found ${total} images.`);
+      }
+      initialData.hits = hits;
+      markup(hits);
+      observer.observe(document.querySelector('.gallery-item:last-child'));
+    } else {
+      Notify.info('Sorry, there are no images matching your search query. Please try again.');
     }
   });
-}
+};
 
-let observer = new IntersectionObserver(onEntry, options);
-observer.observe(refs.scrollDiv);
-refs.form.addEventListener('submit', onSearchFormSubmit);
+const onSearch = event => {
+  event.preventDefault();
+
+  const {
+    elements: { searchQuery },
+  } = event.currentTarget;
+  fetchImgOptions.q = searchQuery.value.toLowerCase().trim();
+  if (fetchImgOptions.q === '') {
+    refs.gallery.innerHTML = '';
+    Notify.failure('There is nothing to search!');
+  }
+  if (fetchImgOptions.q.length) {
+    refs.gallery.innerHTML = '';
+    fetchImgOptions.page = 1;
+    createGallery();
+  }
+};
+
+refs.form.addEventListener('submit', onSearch);
