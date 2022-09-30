@@ -1,3 +1,4 @@
+import './css/main.css';
 import cardMarkup from './templates/picture-card.hbs';
 import { fetchImg, fetchImgOptions }  from './js/api';
 import { Notify } from 'notiflix/build/notiflix-notify-aio';
