@@ -97,7 +97,7 @@ header > form {
   width: 100%;
   height: 200px;
 }
-.info {
+.photo-card .info {
   height: 40px;
   display: flex;
   flex-direction: row;
